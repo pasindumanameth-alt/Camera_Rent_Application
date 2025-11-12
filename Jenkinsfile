@@ -25,6 +25,9 @@ pipeline {
                 dir("frontend") {
                     echo "Frontend directory contents:"
                     sh "pwd && ls -la"
+                    sh "cat Dockerfile | wc -c"
+                    sh "file Dockerfile"
+                    sh "head -20 Dockerfile"
                     echo "Building frontend Docker image: ${FRONTEND_IMAGE}:latest"
                     sh "sudo -n docker build -t ${FRONTEND_IMAGE}:latest ."
                 }
@@ -32,6 +35,9 @@ pipeline {
                 dir("backend") {
                     echo "Backend directory contents:"
                     sh "pwd && ls -la"
+                    sh "cat Dockerfile | wc -c"
+                    sh "file Dockerfile"
+                    sh "head -20 Dockerfile"
                     echo "Building backend Docker image: ${BACKEND_IMAGE}:latest"
                     sh "sudo -n docker build -t ${BACKEND_IMAGE}:latest ."
                 }
