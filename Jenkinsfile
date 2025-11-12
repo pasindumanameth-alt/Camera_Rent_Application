@@ -20,7 +20,7 @@ pipeline {
                 script {
                     // Build the frontend image using the frontend Dockerfile at frontend/Dockerfile
                     echo "Building frontend Docker image: ${FRONTEND_IMAGE}:latest"
-                    sh "docker build -t ${FRONTEND_IMAGE}:latest -f frontend/Dockerfile frontend"
+                    sh "sudo -n docker build -t ${FRONTEND_IMAGE}:latest -f frontend/Dockerfile frontend"
                 }
             }
         }
@@ -30,7 +30,7 @@ pipeline {
                 script {
                     // Build the backend image using the backend/Dockerfile
                     echo "Building backend Docker image: ${BACKEND_IMAGE}:latest"
-                    sh "docker build -t ${BACKEND_IMAGE}:latest -f backend/Dockerfile backend"
+                    sh "sudo -n docker build -t ${BACKEND_IMAGE}:latest -f backend/Dockerfile backend"
                 }
             }
         }
@@ -40,7 +40,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
                         echo "Logging in to Docker Hub..."
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        echo "$DOCKER_PASS" | sudo -n docker login -u "$DOCKER_USER" --password-stdin
                     '''
                 }
             }
@@ -50,9 +50,9 @@ pipeline {
             steps {
                 script {
                     echo "Pushing frontend image: ${FRONTEND_IMAGE}:latest"
-                    sh "docker push ${FRONTEND_IMAGE}:latest"
+                    sh "sudo -n docker push ${FRONTEND_IMAGE}:latest"
                     echo "Pushing backend image: ${BACKEND_IMAGE}:latest"
-                    sh "docker push ${BACKEND_IMAGE}:latest"
+                    sh "sudo -n docker push ${BACKEND_IMAGE}:latest"
                 }
             }
         }
@@ -60,7 +60,7 @@ pipeline {
 
     post {
         always {
-            sh "docker logout || true"
+            sh "sudo -n docker logout || true"
         }
         failure {
             echo "Pipeline failed. Check Docker permissions and credentials."
