@@ -12,14 +12,14 @@ pipeline {
         stage('Checkout') {
             steps {
                 echo "Pulling code from GitHub..."
-                // Use simpler checkout method
                 checkout scm
-                echo "============ Workspace contents after checkout ============"
+                echo "============ WORKSPACE DIAGNOSTICS ============"
                 sh "pwd"
-                sh "ls -la"
-                sh "find . -name 'Dockerfile' -type f"
-                echo "============ Total files in workspace ============"
-                sh "find . -type f | wc -l"
+                sh "echo 'Full directory tree:' && tree -L 3 2>/dev/null || find . -maxdepth 3 -type d"
+                sh "echo 'Looking for all Dockerfiles:' && find . -name 'Dockerfile*' -type f 2>/dev/null"
+                sh "echo 'Looking for package.json files:' && find . -name 'package.json' -type f 2>/dev/null | head -10"
+                sh "echo 'Checking if frontend directory exists:' && test -d frontend && echo 'YES - frontend/ exists' || echo 'NO - frontend/ NOT found'"
+                sh "echo 'Checking if backend directory exists:' && test -d backend && echo 'YES - backend/ exists' || echo 'NO - backend/ NOT found'"
             }
         }
 
