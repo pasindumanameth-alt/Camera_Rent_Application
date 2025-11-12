@@ -2,77 +2,52 @@ pipeline {
     agent any
 
     environment {
-        // 🔧 Customize these
-        DOCKERHUB_CREDENTIALS = 'docced'   // Jenkins credentials ID
-        DOCKERHUB_USER = 'pasindumanameth'
-        BACKEND_IMAGE = 'camera-rent-backend'
-        FRONTEND_IMAGE = 'camera-rent-frontend'
-        REACT_APP_API_URL = 'http://localhost:5001'  // or your production API
+        FRONTEND_IMAGE = "kvcn/frontend-app"
+        BACKEND_IMAGE = "kvcn/backend-app"
+        GIT_REPO = "https://github.com/pasindumanameth-alt/Camera_Rent_Application.git"
     }
 
     stages {
-
-        stage('Checkout') {
+        stage('Clone Repository') {
             steps {
-                checkout scm
+                // checkout main branch explicitly
+                checkout([$class: 'GitSCM', branches: [[name: '*/main']], userRemoteConfigs: [[url: "${GIT_REPO}"]]])
             }
         }
 
-        // ===================== BACKEND =====================
-        stage('Build Backend') {
-            dir('backend') {
-                steps {
-                    script {
-                        echo "Building Backend Docker image..."
-                        sh '''
-                        docker build -t $DOCKERHUB_USER/$BACKEND_IMAGE:latest .
-                        '''
-                    }
-                }
-            }
-        }
-
-        // ===================== FRONTEND =====================
-        stage('Build Frontend') {
-            dir('frontend') {
-                steps {
-                    script {
-                        echo "Building Frontend Docker image..."
-                        sh '''
-                        docker build --build-arg REACT_APP_API_URL=$REACT_APP_API_URL \
-                                     -t $DOCKERHUB_USER/$FRONTEND_IMAGE:latest .
-                        '''
-                    }
-                }
-            }
-        }
-
-        // ===================== PUSH TO DOCKER HUB =====================
-        stage('Push Images') {
+        stage('Build Frontend Docker Image') {
             steps {
                 script {
-                    echo "Pushing images to Docker Hub..."
-                    withCredentials([usernamePassword(credentialsId: "docced", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                        sh '''
-                        echo "$PASSWORD" | docker login -u "$USERNAME" --password-stdin
-                        docker push $DOCKERHUB_USER/$BACKEND_IMAGE:latest
-                        docker push $DOCKERHUB_USER/$FRONTEND_IMAGE:latest
-                        docker logout
-                        '''
-                    }
+                    // Build the frontend image using the frontend Dockerfile at frontend/Dockerfile
+                    sh "docker build -t ${FRONTEND_IMAGE}:latest -f frontend/Dockerfile frontend"
                 }
             }
         }
 
-        // ===================== DEPLOY (optional) =====================
-        stage('Deploy') {
+        stage('Build Backend Docker Image') {
             steps {
                 script {
-                    echo "Deploying containers..."
+                    // Build the backend image using the backend/Dockerfile
+                    sh "docker build -t ${BACKEND_IMAGE}:latest -f backend/Dockerfile backend"
+                }
+            }
+        }
+
+        stage('Login to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
-                    docker compose down || true
-                    docker compose up -d --build
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                     '''
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    sh "docker push ${FRONTEND_IMAGE}:latest"
+                    sh "docker push ${BACKEND_IMAGE}:latest"
                 }
             }
         }
@@ -80,8 +55,7 @@ pipeline {
 
     post {
         always {
-            echo "Pipeline finished. Cleaning up..."
-            sh 'docker system prune -f || true'
+            sh "docker logout"
         }
     }
 }
