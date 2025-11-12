@@ -11,15 +11,25 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                echo "Pulling code from GitHub..."
-                checkout scm
+                echo "Pulling code from GitHub with all submodules..."
+                // Recursively checkout all submodules
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[url: "${GIT_REPO}"]],
+                    submoduleCfg: [
+                        [path: 'frontend', url: '${GIT_REPO}']
+                    ]
+                ])
+                // Alternative: just check out without submodules and assume frontend is regular directory
+                sh "cd ${WORKSPACE} && git submodule deinit -f . 2>/dev/null || true"
+                sh "cd ${WORKSPACE} && git clean -fXd frontend/ 2>/dev/null || true"
                 echo "============ WORKSPACE DIAGNOSTICS ============"
                 sh "pwd"
-                sh "echo 'Full directory tree:' && tree -L 3 2>/dev/null || find . -maxdepth 3 -type d"
-                sh "echo 'Looking for all Dockerfiles:' && find . -name 'Dockerfile*' -type f 2>/dev/null"
-                sh "echo 'Looking for package.json files:' && find . -name 'package.json' -type f 2>/dev/null | head -10"
-                sh "echo 'Checking if frontend directory exists:' && test -d frontend && echo 'YES - frontend/ exists' || echo 'NO - frontend/ NOT found'"
-                sh "echo 'Checking if backend directory exists:' && test -d backend && echo 'YES - backend/ exists' || echo 'NO - backend/ NOT found'"
+                sh "find . -maxdepth 3 -type d 2>/dev/null | head -20"
+                sh "find . -name 'Dockerfile*' -type f 2>/dev/null"
+                sh "test -f frontend/Dockerfile && echo 'frontend/Dockerfile EXISTS' || echo 'frontend/Dockerfile NOT FOUND'"
+                sh "test -f backend/Dockerfile && echo 'backend/Dockerfile EXISTS' || echo 'backend/Dockerfile NOT FOUND'"
             }
         }
 
