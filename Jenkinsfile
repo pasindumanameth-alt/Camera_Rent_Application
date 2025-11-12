@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         // 🔧 Customize these
-        DOCKERHUB_CREDENTIALS = 'dockerhub-credentials-id'   // Jenkins credentials ID
+        DOCKERHUB_CREDENTIALS = 'docced'   // Jenkins credentials ID
         DOCKERHUB_USER = 'pasindumanameth'
         BACKEND_IMAGE = 'camera-rent-backend'
         FRONTEND_IMAGE = 'camera-rent-frontend'
@@ -52,7 +52,7 @@ pipeline {
             steps {
                 script {
                     echo "Pushing images to Docker Hub..."
-                    withCredentials([usernamePassword(credentialsId: "dockerhub-credentials-id", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                    withCredentials([usernamePassword(credentialsId: "docced", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                         sh '''
                         echo "$PASSWORD" | docker login -u "$USERNAME" --password-stdin
                         docker push $DOCKERHUB_USER/$BACKEND_IMAGE:latest
