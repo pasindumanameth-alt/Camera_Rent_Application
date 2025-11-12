@@ -12,11 +12,14 @@ pipeline {
         stage('Checkout') {
             steps {
                 echo "Pulling code from GitHub..."
-                checkout([$class: 'GitSCM', branches: [[name: '*/main']], userRemoteConfigs: [[url: "${GIT_REPO}"]]])
-                echo "Workspace contents after checkout:"
-                sh "pwd && ls -la"
-                sh "ls -la frontend/ || echo 'frontend dir not found'"
-                sh "ls -la backend/ || echo 'backend dir not found'"
+                // Use simpler checkout method
+                checkout scm
+                echo "============ Workspace contents after checkout ============"
+                sh "pwd"
+                sh "ls -la"
+                sh "find . -name 'Dockerfile' -type f"
+                echo "============ Total files in workspace ============"
+                sh "find . -type f | wc -l"
             }
         }
 
