@@ -19,7 +19,8 @@ pipeline {
             steps {
                 script {
                     // Build the frontend image using the frontend Dockerfile at frontend/Dockerfile
-                    sh "docker build -t ${FRONTEND_IMAGE}:latest -f frontend/Dockerfile frontend"
+                    echo "Building frontend Docker image: ${FRONTEND_IMAGE}:latest"
+                    sh "sudo docker build -t ${FRONTEND_IMAGE}:latest -f frontend/Dockerfile frontend"
                 }
             }
         }
@@ -28,7 +29,8 @@ pipeline {
             steps {
                 script {
                     // Build the backend image using the backend/Dockerfile
-                    sh "docker build -t ${BACKEND_IMAGE}:latest -f backend/Dockerfile backend"
+                    echo "Building backend Docker image: ${BACKEND_IMAGE}:latest"
+                    sh "sudo docker build -t ${BACKEND_IMAGE}:latest -f backend/Dockerfile backend"
                 }
             }
         }
@@ -37,7 +39,8 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        echo "Logging in to Docker Hub..."
+                        echo "$DOCKER_PASS" | sudo docker login -u "$DOCKER_USER" --password-stdin
                     '''
                 }
             }
@@ -46,8 +49,10 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    sh "docker push ${FRONTEND_IMAGE}:latest"
-                    sh "docker push ${BACKEND_IMAGE}:latest"
+                    echo "Pushing frontend image: ${FRONTEND_IMAGE}:latest"
+                    sh "sudo docker push ${FRONTEND_IMAGE}:latest"
+                    echo "Pushing backend image: ${BACKEND_IMAGE}:latest"
+                    sh "sudo docker push ${BACKEND_IMAGE}:latest"
                 }
             }
         }
@@ -55,7 +60,13 @@ pipeline {
 
     post {
         always {
-            sh "docker logout"
+            sh "sudo docker logout || true"
+        }
+        failure {
+            echo "Pipeline failed. Check Docker permissions and credentials."
+        }
+        success {
+            echo "Pipeline completed successfully. Images pushed to Docker Hub."
         }
     }
 }
