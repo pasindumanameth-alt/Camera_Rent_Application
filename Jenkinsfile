@@ -20,7 +20,7 @@ pipeline {
                 script {
                     // Build the frontend image using the frontend Dockerfile at frontend/Dockerfile
                     echo "Building frontend Docker image: ${FRONTEND_IMAGE}:latest"
-                    sh "sudo -n docker build -t ${FRONTEND_IMAGE}:latest -f frontend/Dockerfile frontend"
+                    sh "cd frontend && sudo -n docker build -t ${FRONTEND_IMAGE}:latest -f Dockerfile ."
                 }
             }
         }
@@ -30,7 +30,7 @@ pipeline {
                 script {
                     // Build the backend image using the backend/Dockerfile
                     echo "Building backend Docker image: ${BACKEND_IMAGE}:latest"
-                    sh "sudo -n docker build -t ${BACKEND_IMAGE}:latest -f backend/Dockerfile backend"
+                    sh "cd backend && sudo -n docker build -t ${BACKEND_IMAGE}:latest -f Dockerfile ."
                 }
             }
         }
