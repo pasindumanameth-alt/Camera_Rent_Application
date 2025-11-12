@@ -13,17 +13,25 @@ pipeline {
             steps {
                 echo "Pulling code from GitHub..."
                 checkout([$class: 'GitSCM', branches: [[name: '*/main']], userRemoteConfigs: [[url: "${GIT_REPO}"]]])
+                echo "Workspace contents after checkout:"
+                sh "pwd && ls -la"
+                sh "ls -la frontend/ || echo 'frontend dir not found'"
+                sh "ls -la backend/ || echo 'backend dir not found'"
             }
         }
 
         stage('Build Docker Images') {
             steps {
                 dir("frontend") {
+                    echo "Frontend directory contents:"
+                    sh "pwd && ls -la"
                     echo "Building frontend Docker image: ${FRONTEND_IMAGE}:latest"
                     sh "sudo -n docker build -t ${FRONTEND_IMAGE}:latest ."
                 }
 
                 dir("backend") {
+                    echo "Backend directory contents:"
+                    sh "pwd && ls -la"
                     echo "Building backend Docker image: ${BACKEND_IMAGE}:latest"
                     sh "sudo -n docker build -t ${BACKEND_IMAGE}:latest ."
                 }
