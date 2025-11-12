@@ -2,58 +2,62 @@ pipeline {
     agent any
 
     environment {
+        DOCKER_HUB_USER = "kvcn"
         FRONTEND_IMAGE = "kvcn/frontend-app"
         BACKEND_IMAGE = "kvcn/backend-app"
         GIT_REPO = "https://github.com/pasindumanameth-alt/Camera_Rent_Application.git"
     }
 
     stages {
-        stage('Clone Repository') {
+        stage('Checkout') {
             steps {
-                // checkout main branch explicitly
+                echo "Pulling code from GitHub..."
                 checkout([$class: 'GitSCM', branches: [[name: '*/main']], userRemoteConfigs: [[url: "${GIT_REPO}"]]])
             }
         }
 
-        stage('Build Frontend Docker Image') {
+        stage('Build Docker Images') {
             steps {
-                script {
-                    // Build the frontend image using the frontend Dockerfile at frontend/Dockerfile
+                dir("frontend") {
                     echo "Building frontend Docker image: ${FRONTEND_IMAGE}:latest"
-                    sh "cd frontend && sudo -n docker build -t ${FRONTEND_IMAGE}:latest -f Dockerfile ."
+                    sh "sudo -n docker build -t ${FRONTEND_IMAGE}:latest ."
                 }
-            }
-        }
 
-        stage('Build Backend Docker Image') {
-            steps {
-                script {
-                    // Build the backend image using the backend/Dockerfile
+                dir("backend") {
                     echo "Building backend Docker image: ${BACKEND_IMAGE}:latest"
-                    sh "cd backend && sudo -n docker build -t ${BACKEND_IMAGE}:latest -f Dockerfile ."
+                    sh "sudo -n docker build -t ${BACKEND_IMAGE}:latest ."
                 }
             }
         }
 
-        stage('Login to Docker Hub') {
+        stage('Push Docker Images') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
-                        echo "Logging in to Docker Hub..."
-                        echo "$DOCKER_PASS" | sudo -n docker login -u "$DOCKER_USER" --password-stdin
-                    '''
+                    sh """
+                        echo "Logging into Docker Hub..."
+                        echo \$DOCKER_PASS | sudo -n docker login -u \$DOCKER_USER --password-stdin
+                        
+                        echo "Pushing frontend image..."
+                        sudo -n docker push ${FRONTEND_IMAGE}:latest
+                        
+                        echo "Pushing backend image..."
+                        sudo -n docker push ${BACKEND_IMAGE}:latest
+                    """
                 }
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Deploy with Docker Compose') {
             steps {
-                script {
-                    echo "Pushing frontend image: ${FRONTEND_IMAGE}:latest"
-                    sh "sudo -n docker push ${FRONTEND_IMAGE}:latest"
-                    echo "Pushing backend image: ${BACKEND_IMAGE}:latest"
-                    sh "sudo -n docker push ${BACKEND_IMAGE}:latest"
-                }
+                echo "Starting containers using docker-compose..."
+                sh 'sudo -n docker compose up -d'
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                echo "Checking running containers..."
+                sh 'sudo -n docker ps'
             }
         }
     }
@@ -63,10 +67,10 @@ pipeline {
             sh "sudo -n docker logout || true"
         }
         failure {
-            echo "Pipeline failed. Check Docker permissions and credentials."
+            echo "❌ Pipeline failed. Check Docker permissions and credentials."
         }
         success {
-            echo "Pipeline completed successfully. Images pushed to Docker Hub."
+            echo "✅ Pipeline completed successfully! Frontend and backend images pushed to Docker Hub and deployed."
         }
     }
 }
