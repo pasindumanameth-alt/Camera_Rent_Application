@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authService } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -11,48 +12,53 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(localStorage.getItem('token'));
-  const [username, setUsername] = useState(localStorage.getItem('username'));
-  const [isAuthenticated, setIsAuthenticated] = useState(!!token);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = (token, username) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('username', username);
-    setToken(token);
-    setUsername(username);
-    setIsAuthenticated(true);
+  useEffect(() => {
+    // Check for stored user data on mount
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+    setLoading(false);
+  }, []);
+
+  const login = async (email, password) => {
+    try {
+      const data = await authService.login(email, password);
+      setUser(data.user);
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const register = async (username, email, password) => {
+    try {
+      const data = await authService.register(username, email, password);
+      setUser(data.user);
+      return data;
+    } catch (error) {
+      throw error;
+    }
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
-    setToken(null);
-    setUsername(null);
-    setIsAuthenticated(false);
+    authService.logout();
+    setUser(null);
   };
 
-  const getAuthHeaders = () => {
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : '',
-    };
-  };
-
-  useEffect(() => {
-    if (token) {
-      setIsAuthenticated(true);
-    } else {
-      setIsAuthenticated(false);
-    }
-  }, [token]);
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   const value = {
-    token,
-    username,
-    isAuthenticated,
+    user,
     login,
+    register,
     logout,
-    getAuthHeaders,
+    isAuthenticated: !!user
   };
 
   return (

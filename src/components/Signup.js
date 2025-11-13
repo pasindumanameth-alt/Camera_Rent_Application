@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { register } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -26,24 +26,26 @@ const handleSubmit = async (e) => {
     return;
   }
 
+  if (!formData.email || !formData.password) {
+    alert('Please fill in all fields');
+    return;
+  }
+
   try {
-    const res = await fetch('http://localhost:5000/api/auth/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      // backend expects username OR email; you currently store it as "username"
-      body: JSON.stringify({ email: formData.email, password: formData.password })
-    });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Signup failed');
-
-    // Store token and username, then redirect
-    login(data.token, data.username);
+    // Use the AuthContext register function so context state is updated
+    await register(
+      formData.email, // username
+      formData.email, // email
+      formData.password
+    );
     alert('Signup successful');
     navigate('/dashboard');
   } catch (err) {
-    alert(err.message);
-    console.error(err);
+    const errorMessage = typeof err === 'object' && err.message 
+      ? err.message 
+      : (typeof err === 'string' ? err : 'Something went wrong during registration');
+    alert(errorMessage);
+    console.error('Registration error:', err);
   }
 };
 

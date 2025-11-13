@@ -17,28 +17,17 @@ const Login = () => {
     });
   };
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  try {
-    const res = await fetch('http://localhost:5000/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: formData.email, password: formData.password })
-    });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Login failed');
-
-    // Store token and username, then redirect
-    login(data.token, data.username);
-    alert('Login successful');
-    navigate('/dashboard');
-  } catch (err) {
-    alert(err.message);
-    console.error(err);
-  }
-};
+    try {
+      await login(formData.email, formData.password);
+      navigate('/dashboard');
+    } catch (err) {
+      alert(err.message || 'Invalid credentials');
+      console.error('Login error:', err);
+    }
+  };
 
 
   return (
