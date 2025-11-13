@@ -56,12 +56,11 @@ router.put('/:id', adminAuth, async (req, res) => {
 // Delete camera (admin only)
 router.delete('/:id', adminAuth, async (req, res) => {
     try {
-        const camera = await Camera.findById(req.params.id);
+        const camera = await Camera.findByIdAndDelete(req.params.id);
         if (!camera) {
             return res.status(404).json({ message: 'Camera not found' });
         }
 
-        await camera.remove();
         res.json({ message: 'Camera deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });

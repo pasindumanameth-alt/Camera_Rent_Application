@@ -16,7 +16,7 @@ const app = express();
 // reflect the request origin when it matches the allowed list.
 const allowedOrigins = process.env.NODE_ENV === 'production'
     ? ['https://your-production-domain.com']
-    : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://[::1]:3000'];
+    : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://[::1]:3000', 'http://localhost', 'http://127.0.0.1', 'http://[::1]'];
 
 // In development be permissive and reflect the request origin to avoid
 // CORS mismatches from different localhost hostnames (127.0.0.1, ::1, etc.).
@@ -50,6 +50,19 @@ app.get('/api/health', (req, res) => {
     res.json({ 
         status: 'OK', 
         mongodb: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
+    });
+});
+
+// Dashboard endpoint (get statistics)
+app.get('/api/dashboard', (req, res) => {
+    res.json({
+        status: 'OK',
+        data: {
+            totalCameras: 0,
+            availableCameras: 0,
+            rentedCameras: 0,
+            totalRevenue: 0
+        }
     });
 });
 
