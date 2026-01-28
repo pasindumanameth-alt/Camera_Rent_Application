@@ -12,30 +12,36 @@ const rentalRoutes = require('./routes/rentals');
 const app = express();
 
 // CORS configuration
-// In development allow common localhost origins (127.0.0.1 and ::1) and
-// reflect the request origin when it matches the allowed list.
-const allowedOrigins = process.env.NODE_ENV === 'production'
-    ? ['https://your-production-domain.com']
-    : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://[::1]:3000', 'http://localhost', 'http://127.0.0.1', 'http://[::1]'];
+const corsOptions = {
+    origin: function(origin, callback) {
+        // Allow requests with no origin (like mobile apps or Postman)
+        if (!origin) return callback(null, true);
+        
+        // List of allowed origins
+        const allowedOrigins = [
+            'http://localhost:3000',
+            'http://127.0.0.1:3000',
+            'http://[::1]:3000',
+            'http://localhost',
+            'http://127.0.0.1',
+            'http://[::1]',
+            'http://172.31.192.1:3000'
+        ];
+        
+        // Check if origin is in allowlist or if in development mode
+        if (allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+            callback(null, true);
+        } else {
+            console.warn('CORS blocked origin:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+};
 
-// In development be permissive and reflect the request origin to avoid
-// CORS mismatches from different localhost hostnames (127.0.0.1, ::1, etc.).
-if (process.env.NODE_ENV === 'production') {
-    app.use(cors({
-        origin: function(origin, callback) {
-            if (!origin) return callback(null, true);
-            if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
-            console.warn('Blocked CORS origin:', origin);
-            return callback(new Error('Not allowed by CORS'));
-        },
-        credentials: true
-    }));
-} else {
-    app.use(cors({
-        origin: true,
-        credentials: true
-    }));
-}
+app.use(cors(corsOptions));
 
 app.use(express.json());
 
