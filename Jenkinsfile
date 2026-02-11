@@ -11,16 +11,16 @@ pipeline {
         }
 stage('Build Frontend Image') {
   steps {
-    sh "docker build -t pasindumanmeth/camerarent-new-frontend:${BUILD_NUMBER} -f frontend/Dockerfile frontend"
+    sh "docker build -t pasindumanmeth/camerarent-new:${BUILD_NUMBER} -f frontend/Dockerfile frontend"
   }
 }
 
 stage('Build Backend Image') {
   steps {
-    sh "docker build -t pasindumanmeth/camerarent-new-backend:${BUILD_NUMBER} -f backend/Dockerfile backend"
+    sh "docker build -t pasindumanmeth/camerarent-new:${BUILD_NUMBER} -f backend/Dockerfile backend"
   }
 }
-    
+
 
         stage('Login to Docker Hub') {
             steps {
@@ -33,8 +33,8 @@ stage('Build Backend Image') {
         }
         stage('Push Image') {
             steps {
-                sh "docker push pasindumanmeth/camerarent-new-frontend:${BUILD_NUMBER}"
-                sh "docker push pasindumanmeth/camerarent-new-backend:${BUILD_NUMBER}"
+                sh "docker push pasindumanmeth/camerarent-new:${BUILD_NUMBER}"
+                sh "docker push pasindumanmeth/camerarent-new:${BUILD_NUMBER}"
             }
         }
     }
