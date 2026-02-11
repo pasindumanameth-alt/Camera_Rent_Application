@@ -12,8 +12,11 @@ pipeline {
         }
         stage('Build Frontend Image') {
             steps {
+                // Print current workspace and list root contents
+                sh 'pwd && ls -la'
+                // Fail if frontend/Dockerfile does not exist
+                sh '[ -f frontend/Dockerfile ] || (echo "ERROR: frontend/Dockerfile not found!" && exit 1)'
                 dir('frontend') {
-                    // Debug: List files to ensure Dockerfile exists
                     sh 'ls -la'
                     sh 'docker build -t pasindumanmeth/camerarent-new-frontend:${BUILD_NUMBER} .'
                 }
