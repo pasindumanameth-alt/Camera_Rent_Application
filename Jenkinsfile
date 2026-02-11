@@ -5,7 +5,8 @@ pipeline {
         stage('SCM Checkout') {
             steps {
                 retry(3) {
-                    git branch: 'main', url: 'https://github.com/pasindumanameth-alt/Camera_Rent_Application'
+                    git branch: 'main', url: 'https://github.com/pasindumanameth-alt/Camera_Rent_Application.git'
+
                 }
             }
         }
@@ -13,7 +14,7 @@ pipeline {
             steps {
                 dir('frontend') {
                     // Debug: List files to ensure Dockerfile exists
-                    sh 'ls -l'
+                    sh 'ls -la'
                     sh 'docker build -t pasindumanmeth/camerarent-new-frontend:${BUILD_NUMBER} .'
                 }
             }
