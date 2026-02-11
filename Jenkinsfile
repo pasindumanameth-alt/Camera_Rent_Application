@@ -12,6 +12,8 @@ pipeline {
         stage('Build Frontend Image') {
             steps {
                 dir('frontend') {
+                    // Debug: List files to ensure Dockerfile exists
+                    sh 'ls -l'
                     sh 'docker build -t pasindumanmeth/camerarent-new-frontend:${BUILD_NUMBER} .'
                 }
             }
