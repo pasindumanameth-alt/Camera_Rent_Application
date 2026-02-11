@@ -11,9 +11,9 @@ pipeline {
         }
         stage('Build Docker Image') {
             steps {
-                dir('frontend') {
+                
                     sh 'docker build -t pasindumanmeth/camerarent-new:${BUILD_NUMBER} .'
-                }
+                
             }
         }
 
