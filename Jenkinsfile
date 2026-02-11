@@ -11,13 +11,17 @@ pipeline {
         }
         stage('Build Frontend Image') {
             steps {
-                sh 'docker build -t pasindumanmeth/camerarent-new-frontend:${BUILD_NUMBER} .'
+                dir('frontend') {
+                    sh 'docker build -t pasindumanmeth/camerarent-new-frontend:${BUILD_NUMBER} .'
+                }
             }
         }
 
         stage('Build Backend Image') {
             steps {
-                sh 'docker build -t pasindumanmeth/camerarent-new-backend:${BUILD_NUMBER} .'
+                dir('backend') {
+                    sh 'docker build -t pasindumanmeth/camerarent-new-backend:${BUILD_NUMBER} .'
+                }
             }
         }
 
