@@ -12,6 +12,23 @@ services:
     networks:
       - camera-rent-network
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=
+    container_name: camera-rent-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - camera-rent-network
+
+
+
   backend:
     build:
       context: ./backend
@@ -31,20 +48,7 @@ services:
     networks:
       - camera-rent-network
 
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        - REACT_APP_API_URL=
-    container_name: camera-rent-frontend
-    restart: unless-stopped
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
-    networks:
-      - camera-rent-network
+
 
 networks:
   camera-rent-network:
