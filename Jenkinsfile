@@ -1,46 +1,74 @@
 pipeline {
     agent any
-    
+    options { skipDefaultCheckout(true) }
+    environment {
+        DOCKERHUB_REPO = 'pasindumanmeth/camerarent-new'
+        DOCKERHUB_USER = 'pasindumanmeth'
+        DOCKERHUB_CRED_ID = 'dockerhubpassword' // existing credential id (string containing Docker Hub password)
+        FRONTEND_DIR = 'frontend'
+        BACKEND_DIR = 'backend'
+    }
     stages {
-        stage('SCM Checkout') {
+        stage('Checkout') {
             steps {
-                retry(3) {
-                    git branch: 'main', url: 'https://github.com/pasindumanameth-alt/Camera_Rent_Application.git'
+                retry(3) { checkout scm }
+            }
+        }
+
+        stage('Set Image Tag') {
+            steps {
+                script {
+                    def short = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+                    env.IMAGE_TAG = "${env.BUILD_NUMBER}-${short}"
+                    echo "Image tag: ${env.IMAGE_TAG}"
                 }
             }
         }
-stage('Build Frontend Image') {
-  steps {
-    sh "docker build -t pasindumanmeth/camerarent-new:${BUILD_NUMBER} -f frontend/Dockerfile frontend"
-  }
-}
 
-stage('Build Backend Image') {
-  steps {
-    sh "docker build -t pasindumanmeth/camerarent-new:${BUILD_NUMBER} -f backend/Dockerfile backend"
-  }
-}
-
-
-        stage('Login to Docker Hub') {
+        stage('Build Frontend') {
             steps {
-                withCredentials([string(credentialsId: 'dockerhubpassword', variable: 'dockerhubpassword')]) {
-                    script {  
-                        sh "docker login -u pasindumanmeth -p '${dockerhubpassword}'"
-                    }
+                dir("${env.WORKSPACE}/${FRONTEND_DIR}") {
+                    sh "docker build -t ${DOCKERHUB_REPO}:frontend-${IMAGE_TAG} -f Dockerfile ."
                 }
             }
         }
-        stage('Push Image') {
+
+        stage('Build Backend') {
             steps {
-                sh "docker push pasindumanmeth/camerarent-new:${BUILD_NUMBER}"
-                sh "docker push pasindumanmeth/camerarent-new:${BUILD_NUMBER}"
+                dir("${env.WORKSPACE}/${BACKEND_DIR}") {
+                    sh "docker build -t ${DOCKERHUB_REPO}:backend-${IMAGE_TAG} -f Dockerfile ."
+                }
+            }
+        }
+
+        stage('Docker Hub Login') {
+            steps {
+                withCredentials([string(credentialsId: env.DOCKERHUB_CRED_ID, variable: 'DOCKERHUB_PASS')]) {
+                    sh "echo $DOCKERHUB_PASS | docker login -u ${DOCKERHUB_USER} --password-stdin"
+                }
+            }
+        }
+
+        stage('Push Images') {
+            steps {
+                sh "docker push ${DOCKERHUB_REPO}:frontend-${IMAGE_TAG}"
+                sh "docker push ${DOCKERHUB_REPO}:backend-${IMAGE_TAG}"
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                // If your docker-compose uses image names, consider updating it to use the pushed tags.
+                dir("${env.WORKSPACE}") {
+                    sh 'docker-compose down || true'
+                    sh 'docker-compose up -d --build'
+                }
             }
         }
     }
     post {
         always {
-            sh 'docker logout'
+            sh 'docker logout || true'
         }
     }
 }
