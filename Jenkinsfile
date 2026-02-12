@@ -65,7 +65,7 @@ pipeline {
                     sh "docker ps -a --filter name=camera-rent-mongodb --format '{{.ID}}' | xargs -r docker rm -f || true"
                     sh "docker ps -a --filter name=camera-rent-backend --format '{{.ID}}' | xargs -r docker rm -f || true"
                     sh "docker ps -a --filter name=camera-rent-frontend --format '{{.ID}}' | xargs -r docker rm -f || true"
-                    sh 'docker-compose up -d --build'
+                    sh 'docker-compose up -d'
                 }
             }
         }
