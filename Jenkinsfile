@@ -1,80 +1,67 @@
 pipeline {
-    agent any
-    options { skipDefaultCheckout(true) }
-    environment {
-        DOCKERHUB_REPO = 'pasindumanmeth/camerarent-new'
-        DOCKERHUB_USER = 'pasindumanmeth'
-        DOCKERHUB_CRED_ID = 'dockerhubpassword' // existing credential id (string containing Docker Hub password)
-        FRONTEND_DIR = 'frontend'
-        BACKEND_DIR = 'backend'
+  agent any
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
     }
+
+  }
+}
+pipeline {
+    agent any
+    
     stages {
-        stage('Checkout') {
+        stage('SCM Checkout') {
             steps {
-                retry(3) { 
+                retry(3) {
                     git branch: 'main', url: 'https://github.com/pasindumanameth-alt/Camera_Rent_Application.git'
                 }
             }
         }
+stage('Build Frontend Image') {
+  steps {
+    sh "docker build -t pasindumanmeth/camerarent-new:${BUILD_NUMBER} -f frontend/Dockerfile frontend"
+  }
+}
 
-        stage('Set Image Tag') {
+stage('Build Backend Image') {
+  steps {
+    sh "docker build -t pasindumanmeth/camerarent-new:${BUILD_NUMBER} -f backend/Dockerfile backend"
+  }
+}
+
+
+        stage('Login to Docker Hub') {
             steps {
-                script {
-                    def gitShort = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
-                    env.IMAGE_TAG = "${env.BUILD_NUMBER}-${gitShort}"
-                    echo "Image tag: ${env.IMAGE_TAG}"
+                withCredentials([string(credentialsId: 'dockerhubpassword', variable: 'dockerhubpassword')]) {
+                    script {  
+                        sh "docker login -u pasindumanmeth -p '${dockerhubpassword}'"
+                    }
                 }
             }
         }
-
-        stage('Build Frontend') {
+        stage('Push Image') {
             steps {
-                dir("${env.WORKSPACE}/${FRONTEND_DIR}") {
-                    sh "docker build -t ${DOCKERHUB_REPO}:frontend-${IMAGE_TAG} -f Dockerfile ."
-                }
+                sh "docker push pasindumanmeth/camerarent-new:${BUILD_NUMBER}"
+                sh "docker push pasindumanmeth/camerarent-new:${BUILD_NUMBER}"
             }
         }
 
-        stage('Build Backend') {
+        stage('Build & Deploy') {
             steps {
-                dir("${env.WORKSPACE}/${BACKEND_DIR}") {
-                    sh "docker build -t ${DOCKERHUB_REPO}:backend-${IMAGE_TAG} -f Dockerfile ."
-                }
-            }
-        }
-
-        stage('Docker Hub Login') {
-            steps {
-                withCredentials([string(credentialsId: env.DOCKERHUB_CRED_ID, variable: 'DOCKERHUB_PASS')]) {
-                    sh "echo $DOCKERHUB_PASS | docker login -u ${DOCKERHUB_USER} --password-stdin"
-                }
-            }
-        }
-
-        stage('Push Images') {
-            steps {
-                sh "docker push ${DOCKERHUB_REPO}:frontend-${IMAGE_TAG}"
-                sh "docker push ${DOCKERHUB_REPO}:backend-${IMAGE_TAG}"
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                // Remove previous containers that may conflict with compose
-                dir("${env.WORKSPACE}") {
-                    sh 'docker-compose down --remove-orphans || true'
-                    // remove specific named containers if they still exist
-                    sh "docker ps -a --filter name=mongo --format '{{.ID}}' | xargs -r docker rm -f || true"
-                    sh "docker ps -a --filter name=camera-rent-backend --format '{{.ID}}' | xargs -r docker rm -f || true"
-                    sh "docker ps -a --filter name=camera-rent-frontend --format '{{.ID}}' | xargs -r docker rm -f || true"
-                    sh 'docker-compose up -d'
-                }
+                dir("${WORKSPACE}") {
+                sh 'docker-compose down || true'
+                sh 'docker-compose up -d --build'
             }
         }
     }
+
+    }
     post {
         always {
-            sh 'docker logout || true'
+            sh 'docker logout'
         }
     }
 }
