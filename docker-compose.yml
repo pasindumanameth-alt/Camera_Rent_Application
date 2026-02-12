@@ -1,7 +1,6 @@
 services:
   mongodb:
     image: mongo:7
-    container_name: camera-rent-mongodb
     restart: unless-stopped
     ports:
       - "27017:27017"
@@ -18,7 +17,6 @@ services:
       dockerfile: Dockerfile
       args:
         - REACT_APP_API_URL=
-    container_name: camera-rent-frontend
     restart: unless-stopped
     ports:
       - "80:80"
@@ -33,7 +31,6 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: camera-rent-backend
     restart: unless-stopped
     ports:
       - "5001:5001"
