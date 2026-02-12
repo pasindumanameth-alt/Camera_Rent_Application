@@ -58,9 +58,13 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                // If your docker-compose uses image names, consider updating it to use the pushed tags.
+                // Remove previous containers that may conflict with compose
                 dir("${env.WORKSPACE}") {
-                    sh 'docker-compose down || true'
+                    sh 'docker-compose down --remove-orphans || true'
+                    // remove specific named containers if they still exist
+                    sh "docker ps -a --filter name=camera-rent-mongodb --format '{{.ID}}' | xargs -r docker rm -f || true"
+                    sh "docker ps -a --filter name=camera-rent-backend --format '{{.ID}}' | xargs -r docker rm -f || true"
+                    sh "docker ps -a --filter name=camera-rent-frontend --format '{{.ID}}' | xargs -r docker rm -f || true"
                     sh 'docker-compose up -d --build'
                 }
             }
