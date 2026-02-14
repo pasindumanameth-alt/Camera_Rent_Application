@@ -12,11 +12,7 @@ services:
       - camera-rent-network
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        - REACT_APP_API_URL=
+    image: pasindumanmeth/camerarent-new:latest
     restart: unless-stopped
     ports:
       - "80:80"
@@ -28,9 +24,7 @@ services:
 
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: pasindumanmeth/camerarent-new:latest
     restart: unless-stopped
     ports:
       - "5001:5001"

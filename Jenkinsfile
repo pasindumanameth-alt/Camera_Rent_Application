@@ -33,8 +33,9 @@ stage('Build Backend Image') {
         }
         stage('Push Image') {
             steps {
+                sh "docker tag pasindumanmeth/camerarent-new:${BUILD_NUMBER} pasindumanmeth/camerarent-new:latest"
                 sh "docker push pasindumanmeth/camerarent-new:${BUILD_NUMBER}"
-                sh "docker push pasindumanmeth/camerarent-new:${BUILD_NUMBER}"
+                sh "docker push pasindumanmeth/camerarent-new:latest"
             }
         }
 
