@@ -11,20 +11,8 @@ services:
     networks:
       - camera-rent-network
 
-  frontend:
-    image: pasindumanmeth/camerarent-new:latest
-    restart: unless-stopped
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
-    networks:
-      - camera-rent-network
-
-
-
   backend:
-    image: pasindumanmeth/camerarent-new:latest
+    image: pasindumanmeth/camerarent-backend:latest
     restart: unless-stopped
     ports:
       - "5001:5001"
@@ -39,7 +27,15 @@ services:
     networks:
       - camera-rent-network
 
-
+  frontend:
+    image: pasindumanmeth/camerarent-frontend:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - camera-rent-network
 
 networks:
   camera-rent-network:
@@ -47,4 +43,3 @@ networks:
 
 volumes:
   mongodb_data:
-

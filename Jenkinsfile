@@ -1,57 +1,77 @@
 pipeline {
-    agent any
-    
-    stages {
-        stage('SCM Checkout') {
-            steps {
-                retry(3) {
-                    git branch: 'main', url: 'https://github.com/pasindumanameth-alt/Camera_Rent_Application.git'
-                }
-            }
-        }
-stage('Build Frontend Image') {
-  steps {
-    sh "docker build -t pasindumanmeth/camerarent-new:${BUILD_NUMBER} -f frontend/Dockerfile frontend"
+  agent any
+
+  environment {
+    FRONTEND_IMAGE = "pasindumanmeth/camerarent-frontend"
+    BACKEND_IMAGE  = "pasindumanmeth/camerarent-backend"
   }
-}
 
-stage('Build Backend Image') {
-  steps {
-    sh "docker build -t pasindumanmeth/camerarent-new:${BUILD_NUMBER} -f backend/Dockerfile backend"
+  stages {
+    stage('SCM Checkout') {
+      steps {
+        retry(3) {
+          git branch: 'main', url: 'https://github.com/pasindumanameth-alt/Camera_Rent_Application.git'
+        }
+      }
+    }
+
+    stage('Build Frontend Image') {
+      steps {
+        sh """
+          docker build -t ${FRONTEND_IMAGE}:${BUILD_NUMBER} -f frontend/Dockerfile frontend
+          docker tag ${FRONTEND_IMAGE}:${BUILD_NUMBER} ${FRONTEND_IMAGE}:latest
+        """
+      }
+    }
+
+    stage('Build Backend Image') {
+      steps {
+        sh """
+          docker build -t ${BACKEND_IMAGE}:${BUILD_NUMBER} -f backend/Dockerfile backend
+          docker tag ${BACKEND_IMAGE}:${BUILD_NUMBER} ${BACKEND_IMAGE}:latest
+        """
+      }
+    }
+
+    stage('Login to Docker Hub') {
+      steps {
+        withCredentials([string(credentialsId: 'dockerhubpassword', variable: 'DOCKERHUB_PASSWORD')]) {
+          sh """
+            docker login -u pasindumanmeth -p '${DOCKERHUB_PASSWORD}'
+          """
+        }
+      }
+    }
+
+    stage('Push Images') {
+      steps {
+        sh """
+          docker push ${FRONTEND_IMAGE}:${BUILD_NUMBER}
+          docker push ${FRONTEND_IMAGE}:latest
+          docker push ${BACKEND_IMAGE}:${BUILD_NUMBER}
+          docker push ${BACKEND_IMAGE}:latest
+        """
+      }
+    }
+
+    stage('Deploy with Docker Compose') {
+      steps {
+        dir("${WORKSPACE}") {
+          sh """
+            docker compose down --remove-orphans || true
+            docker compose pull
+            docker compose up -d --force-recreate
+          """
+        }
+      }
+    }
   }
-}
 
-
-        stage('Login to Docker Hub') {
-            steps {
-                withCredentials([string(credentialsId: 'dockerhubpassword', variable: 'dockerhubpassword')]) {
-                    script {  
-                        sh "docker login -u pasindumanmeth -p '${dockerhubpassword}'"
-                    }
-                }
-            }
-        }
-        stage('Push Image') {
-            steps {
-                sh "docker tag pasindumanmeth/camerarent-new:${BUILD_NUMBER} pasindumanmeth/camerarent-new:latest"
-                sh "docker push pasindumanmeth/camerarent-new:${BUILD_NUMBER}"
-                sh "docker push pasindumanmeth/camerarent-new:latest"
-            }
-        }
-
-        stage('Build & Deploy') {
-            steps {
-                dir("${WORKSPACE}") {
-                sh 'docker-compose down || true'
-                sh 'docker-compose up -d'
-            }
-        }
+  post {
+    always {
+      sh 'docker logout || true'
+      // Optional cleanup (uncomment if disk gets full)
+      // sh 'docker image prune -f || true'
     }
-
-    }
-    post {
-        always {
-            sh 'docker logout'
-        }
-    }
+  }
 }
