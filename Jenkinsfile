@@ -6,6 +6,11 @@ pipeline {
     BACKEND_IMAGE  = "pasindumanmeth/camerarent-backend"
   }
 
+  options {
+    timestamps()
+    disableConcurrentBuilds()
+  }
+
   stages {
     stage('SCM Checkout') {
       steps {
@@ -15,10 +20,10 @@ pipeline {
       }
     }
 
-    stage('Build Frontend Image') {
+    stage('Build Frontend Image (no-cache)') {
       steps {
         sh """
-          docker build -t ${FRONTEND_IMAGE}:${BUILD_NUMBER} -f frontend/Dockerfile frontend
+          docker build --no-cache -t ${FRONTEND_IMAGE}:${BUILD_NUMBER} -f frontend/Dockerfile frontend
           docker tag ${FRONTEND_IMAGE}:${BUILD_NUMBER} ${FRONTEND_IMAGE}:latest
         """
       }
@@ -61,6 +66,15 @@ pipeline {
             docker-compose up -d --force-recreate --remove-orphans
           '''
         }
+      }
+    }
+
+    stage('Verify Deployed Frontend Image') {
+      steps {
+        sh '''
+          echo "Running containers:"
+          docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"
+        '''
       }
     }
   }
