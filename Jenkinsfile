@@ -36,9 +36,7 @@ pipeline {
     stage('Login to Docker Hub') {
       steps {
         withCredentials([string(credentialsId: 'dockerhubpassword', variable: 'DOCKERHUB_PASSWORD')]) {
-          sh """
-            docker login -u pasindumanmeth -p '${DOCKERHUB_PASSWORD}'
-          """
+          sh "docker login -u pasindumanmeth -p '${DOCKERHUB_PASSWORD}'"
         }
       }
     }
@@ -57,11 +55,11 @@ pipeline {
     stage('Deploy with Docker Compose') {
       steps {
         dir("${WORKSPACE}") {
-          sh """
-            docker compose down --remove-orphans || true
-            docker compose pull
-            docker compose up -d --force-recreate
-          """
+          sh '''
+            docker-compose down || true
+            docker-compose pull
+            docker-compose up -d --force-recreate --remove-orphans
+          '''
         }
       }
     }
@@ -70,8 +68,6 @@ pipeline {
   post {
     always {
       sh 'docker logout || true'
-      // Optional cleanup (uncomment if disk gets full)
-      // sh 'docker image prune -f || true'
     }
   }
 }
