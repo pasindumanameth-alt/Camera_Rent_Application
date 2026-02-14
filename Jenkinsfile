@@ -54,43 +54,46 @@ pipeline {
 
         stage('Deploy on EC2 Server') {
             steps {
-                sshagent(['ec2-ssh-key']) {
-                    sh """
-ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} << 'EOF'
-    docker pull ${FRONTEND_IMAGE}:${BUILD_TAG}
-    docker pull ${BACKEND_IMAGE}:${BUILD_TAG}
+                script {
+                    withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')]) {
+                        sh """
+                            chmod 600 \${SSH_KEY}
+                            ssh -o StrictHostKeyChecking=no -i \${SSH_KEY} ${EC2_USER}@${EC2_IP} << 'ENDSSH'
+                                docker pull ${FRONTEND_IMAGE}:${BUILD_TAG}
+                                docker pull ${BACKEND_IMAGE}:${BUILD_TAG}
 
-    docker stop frontend backend mongo || true
-    docker rm frontend backend mongo || true
+                                docker stop frontend backend mongo || true
+                                docker rm frontend backend mongo || true
 
-    docker network create mern-net || true
-    docker volume create mongo-data || true
+                                docker network create mern-net || true
+                                docker volume create mongo-data || true
 
-    # Run MongoDB for the backend
-    docker run -d \\
-        --name mongo \\
-        --network mern-net \\
-        -p 27017:27017 \\
-        -v mongo-data:/data/db \\
-        mongo:6
+                                # Run MongoDB for the backend
+                                docker run -d \\
+                                    --name mongo \\
+                                    --network mern-net \\
+                                    -p 27017:27017 \\
+                                    -v mongo-data:/data/db \\
+                                    mongo:6
 
-    # Run backend with connection string to MongoDB container
-    docker run -d \\
-        --name backend \\
-        --network mern-net \\
-        -p 5000:5000 \\
-        -e MONGODB_URI="mongodb://mongo:27017/camerarentdb" \\
-        -e JWT_SECRET="supersecret-jwt-key" \\
-        ${BACKEND_IMAGE}:${BUILD_TAG}
+                                # Run backend with connection string to MongoDB container
+                                docker run -d \\
+                                    --name backend \\
+                                    --network mern-net \\
+                                    -p 5000:5000 \\
+                                    -e MONGODB_URI="mongodb://mongo:27017/camerarentdb" \\
+                                    -e JWT_SECRET="supersecret-jwt-key" \\
+                                    ${BACKEND_IMAGE}:${BUILD_TAG}
 
-    # Run frontend
-    docker run -d \\
-        --name frontend \\
-        --network mern-net \\
-        -p 80:80 \\
-        ${FRONTEND_IMAGE}:${BUILD_TAG}
-EOF
-                    """
+                                # Run frontend
+                                docker run -d \\
+                                    --name frontend \\
+                                    --network mern-net \\
+                                    -p 80:80 \\
+                                    ${FRONTEND_IMAGE}:${BUILD_TAG}
+ENDSSH
+                        """
+                    }
                 }
             }
         }
