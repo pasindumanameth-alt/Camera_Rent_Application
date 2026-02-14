@@ -59,14 +59,18 @@ pipeline {
                         sh """
                             chmod 600 \${SSH_KEY}
                             ssh -o StrictHostKeyChecking=no -i \${SSH_KEY} ${EC2_USER}@${EC2_IP} << 'ENDSSH'
+                                # Pull new images
                                 docker pull ${FRONTEND_IMAGE}:${BUILD_TAG}
                                 docker pull ${BACKEND_IMAGE}:${BUILD_TAG}
 
-                                docker stop frontend backend mongo || true
-                                docker rm frontend backend mongo || true
+                                # Stop and remove all existing containers
+                                echo "Stopping all running containers..."
+                                docker stop \$(docker ps -aq) 2>/dev/null || true
+                                docker rm \$(docker ps -aq) 2>/dev/null || true
 
-                                docker network create mern-net || true
-                                docker volume create mongo-data || true
+                                # Create network and volume if they don't exist
+                                docker network create mern-net 2>/dev/null || true
+                                docker volume create mongo-data 2>/dev/null || true
 
                                 # Run MongoDB for the backend
                                 docker run -d \\
@@ -74,7 +78,11 @@ pipeline {
                                     --network mern-net \\
                                     -p 27017:27017 \\
                                     -v mongo-data:/data/db \\
+                                    --restart unless-stopped \\
                                     mongo:6
+
+                                # Wait for MongoDB to be ready
+                                sleep 5
 
                                 # Run backend with connection string to MongoDB container
                                 docker run -d \\
@@ -83,6 +91,7 @@ pipeline {
                                     -p 5000:5000 \\
                                     -e MONGODB_URI="mongodb://mongo:27017/camerarentdb" \\
                                     -e JWT_SECRET="supersecret-jwt-key" \\
+                                    --restart unless-stopped \\
                                     ${BACKEND_IMAGE}:${BUILD_TAG}
 
                                 # Run frontend
@@ -90,7 +99,12 @@ pipeline {
                                     --name frontend \\
                                     --network mern-net \\
                                     -p 80:80 \\
+                                    --restart unless-stopped \\
                                     ${FRONTEND_IMAGE}:${BUILD_TAG}
+
+                                # Show running containers
+                                echo "Deployment successful! Running containers:"
+                                docker ps --format "table {{.Names}}\\t{{.Image}}\\t{{.Status}}\\t{{.Ports}}"
 ENDSSH
                         """
                     }
