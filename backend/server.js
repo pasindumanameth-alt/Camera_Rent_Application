@@ -25,7 +25,12 @@ const corsOptions = {
             'http://localhost',
             'http://127.0.0.1',
             'http://[::1]',
-            'http://172.31.192.1:3000'
+            'http://172.31.192.1:3000',
+            'http://13.53.37.159',
+            'http://13.53.37.159:80',
+            'http://ec2-13-53-37-159.eu-north-1.compute.amazonaws.com',
+            'https://13.53.37.159',
+            'https://ec2-13-53-37-159.eu-north-1.compute.amazonaws.com'
         ];
         
         // Check if origin is in allowlist or if in development mode
